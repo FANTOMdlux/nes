@@ -1,9 +1,15 @@
+pub trait manipulate{
+     fn read(&Self,u16)->(){}
 
+     fn write(&mut Self, u8,u16)->(){}
+  }
+
+///
 pub struct RAM{ pub ram:[u8;1024*64]}
 
 pub static mut memoram :RAM =RAM{ram:[0;1024*64 ]};
 
- impl RAM{
+impl RAM{
 
   pub  fn read(s:&Self,ram_addr:u16)->u8{
     let mut name : u8 =0;
@@ -23,9 +29,10 @@ pub static mut memoram :RAM =RAM{ram:[0;1024*64 ]};
         { none.ram[ram_addr as usize]=data;}
  
 
-  }
+   }
 
 
 
 
-}
+ }
+ fn main(){}
