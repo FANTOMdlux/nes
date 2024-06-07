@@ -228,7 +228,7 @@ pub struct oper_var{
   pub fn ZIY(memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
       cpu_reg.Pc +=1;
       oper.abs_addr= RAM::read(memo ,cpu_reg.Pc) as u16 ;
-      oper.abs_addr =  RAM::read(memo , oper.abs_addr) as u16+(RAM::read(memo , oper.abs_addr+1) as u16)*0x0100 + cpu_reg.Y as u16;
+      oper.abs_addr =  RAM::read(memo , oper.abs_addr) as u16+(RAM::read(memo , oper.abs_addr+1 ) as u16)*0x0100 + cpu_reg.Y as u16;
       cpu_reg.A = RAM ::read(memo ,oper.abs_addr);
       cpu_reg.Pc +=1;
       false
@@ -237,6 +237,7 @@ pub struct oper_var{
   pub fn ACC(memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
     cpu_reg.Pc +=1;
     oper.curr_data = cpu_reg.A;
+    oper.abs_addr = cpu_reg.Pc;
     cpu_reg.Pc +=1;
     false
     }
@@ -245,18 +246,52 @@ pub struct oper_var{
 
 
 //44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
-      pub fn  ADC (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){} 
-      pub fn  AND (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
-          let mut data : u8 = oper.curr_data;
-          data &= cpu_reg.A;
-          cpu_reg.A = data;
+       //   pub fn  ADC (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
+        let mut data : u16 = cpu_reg.A as u16  + Regs::GET_FLAG(cpu_reg, Flags::C) as u16 *0x0100 + oper.curr_data as u16;
+        if data &0x0080 !=0{Regs::SET_FLAG(cpu_reg , Flags::N)};
+        if data & 0x00ff ==0{Regs::SET_FLAG(cpu_reg, Flags::Z)} ;
+        if(!(cpu_reg.A as u16 ^oper.curr_data as u16) &(cpu_reg.A as u16 ^ data))&0x80>0{Regs::SET_FLAG(cpu_reg, Flags::V)};
+        if(data >= 256){Regs::SET_FLAG(cpu_reg, Flags::C)};
+        cpu_reg.A = (data & 0x00ff ) as u8;
+        true
 
-          false
+
+         } 
+
+      pub fn  AND (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
+          cpu_reg.A &= oper.curr_data;
+          if(cpu_reg.A & 0x80)!=0{Regs::SET_FLAG(cpu_reg , Flags::N)};
+          if(cpu_reg.A &0xff)==0{Regs::SET_FLAG(cpu_reg ,Flags::Z)};
+          true
        }
-      pub fn  ASL (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){}
-      pub fn  BCC (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){}
-      pub fn  BCS (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){}
-      pub fn  BEQ (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){}
+      pub fn  ASL (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
+         cpu_reg.A =oper.curr_data;
+         if(cpu_reg.A &0x80 != 0) {Regs::SET_FLAG(cpu_reg , Flags::C)};
+         cpu_reg.A <<=1;
+         if(cpu_reg.A &0x80 != 0) {Regs::SET_FLAG(cpu_reg, Flags::N)};
+         if(cpu_reg.A ==0){Regs::SET_FLAG(cpu_reg, Flags::Z)};
+         if(oper.abs_addr !=cpu_reg.Pc-1){
+          RAM::write(memo , cpu_reg.A, oper.abs_addr);
+         }
+         false
+
+       }
+      pub fn  BCC (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
+          if(!Regs::GET_FLAG(cpu_reg , Flags::C)){cpu_reg.Pc += oper.rel_addr;
+          true}else{false}
+
+
+
+        }
+      pub fn  BCS (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
+        if(Regs::GET_FLAG(cpu_reg , Flags::C)){cpu_reg.Pc += oper.rel_addr;
+          true}else{false}
+         }
+      pub fn  BEQ (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->bool{
+        if(Regs::GET_FLAG(cpu_reg,Flags::Z)){cpu_reg.abs_addr += oper.rel_addr;true}
+        false
+
+        }
       pub fn  BIT (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){}
       pub fn  BMI (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){}
       pub fn  BNE (memo: &mut RAM, cpu_reg:&mut Regs, oper: &mut oper_var)->(){}
